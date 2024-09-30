@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сапёр</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .board { display: grid; margin: 0 auto; }
+        .cell {
+            width: 30px; height: 30px; border: 1px solid #ddd; display: inline-block;
+            vertical-align: top; line-height: 30px; cursor: pointer; text-align: center;
+        }
+        .cell.bomb { background-color: red; }
+        .cell.revealed { background-color: #f0f0f0; cursor: default; }
+    </style>
+</head>
+<body>
+    <h1>Игра "Сапёр"</h1>
+    <div id="game-board" class="board"></div>
+    <script>
+        const width = 8;
+        const height = 8;
+        const bombsCount = 10;
+
+        const boardElement = document.getElementById('game-board');
+        boardElement.style.gridTemplateColumns = `repeat(${width}, 30px)`;
+
+        let board = Array(height).fill().map(() => Array(width).fill(0));
+        let revealed = Array(height).fill().map(() => Array(width).fill(false));
+
+        function placeBombs() {
+            let bombsPlaced = 0;
+            while (bombsPlaced < bombsCount) {
+                const x = Math.floor(Math.random() * width);
+                const y = Math.floor(Math.random() * height);
+                if (board[y][x] !== 'B') {
+                    board[y][x] = 'B';
+                    bombsPlaced++;
+                }
+            }
+        }
+
+        function calculateNumbers() {
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (board[y][x] === 'B') continue;
+                    let bombCount = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (y + dy >= 0 && y + dy < height && x + dx >= 0 && x + dx < width && board[y + dy][x + dx] === 'B') {
+                                bombCount++;
+                            }
+                        }
+                    }
+                    board[y][x] = bombCount;
+                }
+            }
+        }
+
+        function createBoard() {
+            placeBombs();
+            calculateNumbers();
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('click', onCellClick);
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function revealCell(x, y) {
+            if (revealed[y][x]) return;
+            revealed[y][x] = true;
+            const cell = boardElement.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
+            cell.classList.add('revealed');
+            if (board[y][x] === 'B') {
+                cell.classList.add('bomb');
+                cell.textContent = '💣';
+                alert('Вы наткнулись на бомбу! Игра окончена.');
+            } else if (board[y][x] > 0) {
+                cell.textContent = board[y][x];
+            } else {
+                cell.textContent = '';
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (y + dy >= 0 && y + dy < height && x + dx >= 0 && x + dx < width) {
+                            revealCell(x + dx, y + dy);
+                        }
+                    }
+                }
+            }
+        }
+
+        function onCellClick(event) {
+            const x = parseInt(event.target.dataset.x);
+            const y = parseInt(event.target.dataset.y);
+            revealCell(x, y);
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
